@@ -1,0 +1,134 @@
+name: Publish
+
+# Builds and publishes a v* tag, then updates the catalog. Start a release from the
+# Release workflow, which pushes the tag.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Determine version
+        id: version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: version
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+          - os: ubuntu-latest
+            goos: linux
+            goarch: arm64
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.version.outputs.tag }}
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.26'
+
+      - name: Configure module resolution
+        run: |
+          go env -w GOPROXY=direct
+          go env -w GOPRIVATE=github.com/Silo-Server/*
+          go env -w GONOSUMDB=github.com/Silo-Server/*
+
+      - name: Reject committed local SDK replaces
+        run: |
+          if grep -Eq '^replace github.com/Silo-Server/silo-plugin-sdk => /' go.mod; then
+            echo "go.mod contains a machine-local silo-plugin-sdk replace."
+            exit 1
+          fi
+
+      - name: Build plugin binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: '0'
+          GOWORK: off
+        run: |
+          mkdir -p dist
+          binary="trakt-${{ needs.version.outputs.version }}-${GOOS}-${GOARCH}"
+          version="${{ needs.version.outputs.version }}"
+          go build -trimpath -ldflags="-s -w -X main.version=${version}" -o "dist/${binary}" .
+          checksum=$(shasum -a 256 "dist/${binary}" | awk '{print $1}')
+          printf '%s  %s\n' "$checksum" "$binary" > dist/checksums.txt
+          sed "s/__CHECKSUM__/${checksum}/" manifest.json > "dist/manifest-${GOOS}-${GOARCH}.json"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: |
+            dist/trakt-${{ needs.version.outputs.version }}-${{ matrix.goos }}-${{ matrix.goarch }}
+            dist/checksums.txt
+            dist/manifest-${{ matrix.goos }}-${{ matrix.goarch }}.json
+
+  release:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release
+          : > release/checksums.txt
+          for dir in artifacts/plugin-*; do
+            platform=$(basename "$dir" | sed 's/plugin-//')
+            cp "${dir}/trakt-${{ needs.version.outputs.version }}-${platform}" "release/trakt-${{ needs.version.outputs.version }}-${platform}"
+            cat "${dir}/checksums.txt" >> release/checksums.txt
+          done
+          sort -u -o release/checksums.txt release/checksums.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.version.outputs.tag }}
+          files: |
+            release/trakt-${{ needs.version.outputs.version }}-linux-amd64
+            release/trakt-${{ needs.version.outputs.version }}-linux-arm64
+            release/trakt-${{ needs.version.outputs.version }}-darwin-arm64
+            release/checksums.txt
+          generate_release_notes: true
+
+  catalog:
+    needs: release
+    uses: theramindex/silo-plugins/.github/workflows/publish-plugin.yml@main
+    with:
+      plugin-id: silo.ramindex.trakt
+      display-name: Trakt
+      asset-prefix: trakt-{version}-
+    secrets: inherit

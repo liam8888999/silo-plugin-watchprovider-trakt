@@ -1,5 +1,7 @@
 # Contributing to the Trakt Watch Provider Plugin
 
+This is the ramindex fork of a plugin Silo archived. Silo no longer takes Trakt changes, so changes land here.
+
 The [Silo contribution guide](https://github.com/Silo-Server/.github/blob/main/CONTRIBUTING.md)
 covers project-wide coordination, focused changes, evidence, AI disclosure, and
 pull request expectations. Those requirements apply here; this guide adds the
@@ -7,7 +9,7 @@ plugin-specific workflow.
 
 ## Before you start
 
-Open an [issue](https://github.com/Silo-Server/silo-plugin-watchprovider-trakt/issues)
+Open an [issue](https://github.com/theramindex/silo-plugin-watchprovider-trakt/issues)
 before changing authentication, reconciliation, idempotency, supported state,
 configuration, or the advertised capability. This repository owns the Trakt
 adapter; plugin contracts belong in

@@ -1,8 +1,10 @@
 # Trakt watch-provider plugin for Silo
 
-Syncs Silo profiles with their [Trakt](https://trakt.tv) accounts through Silo's `watch_sync_provider.v1` plugin contract. It replaces the Trakt provider that was built into the Silo server, with the same behavior and the same stored identifiers, so existing connections carry over.
+Syncs Silo profiles with their [Trakt](https://trakt.tv) accounts through Silo's `watch_sync_provider.v1` plugin contract.
 
-Version 0.2.0 needs a Silo server whose plugin host supports `silo-plugin-sdk` v0.21, the release that added dropped shows to the contract. An older server ignores the plugin's dropped-show support and syncs everything else.
+This is the ramindex fork of [Silo-Server/silo-plugin-watchprovider-trakt](https://github.com/Silo-Server/silo-plugin-watchprovider-trakt), which Silo archived when it dropped Trakt support. Silo's host refuses the original plugin ID, `silo.watchprovider.trakt`, so this fork ships as `silo.ramindex.trakt` from the ramindex plugin catalog. Silo registers it like any other third-party watch provider.
+
+Version 0.3.0 builds against `silo-plugin-sdk` v0.27.0 and needs a Silo server whose plugin host supports `silo-plugin-sdk` v0.21 or later, the release that added dropped shows to the contract.
 
 ## Capabilities
 
@@ -30,17 +32,18 @@ The plugin keeps to Trakt's rate limits for each connection: one write per secon
 
 Until the client ID and secret are set, every Trakt request fails with a message asking an administrator to configure the plugin.
 
-## Upgrading from Silo's built-in Trakt provider
+## Moving from Silo's Trakt support
 
-Existing Trakt connections move to the plugin once you run a Silo server release that serves Trakt through it. That release registers the plugin under the built-in provider's key, keeps every profile's sign-in and sync records, and copies the client ID and secret saved for the built-in provider into the plugin's settings. Profiles do not need to reconnect.
+Silo's Trakt removal deleted every Trakt connection and the saved client ID and secret, and disabled the original plugin. Watch history Silo imported from Trakt stays. After installing this plugin:
 
-The first sync reads each account in full, as every Trakt sync does. Plays and ratings Silo already imported are not imported twice, and plays Silo already sent are not sent again.
+1. Enter the Trakt app's client ID and secret again (Setup, step 2). The existing Trakt API app works.
+2. Each profile connects its Trakt account again.
 
-A connection whose refresh token Trakt issued before its 2026 sign-in migration fails with "reconnect Trakt" under the plugin, as it did under the built-in provider. Signing in again fixes it.
+The first sync reads each account in full, as every Trakt sync does. Silo records an imported play only when it is newer than the watch it already has, so history imported under the old provider is not doubled.
 
 ## Development
 
-The plugin builds against `silo-plugin-sdk` v0.21.0.
+The plugin builds against `silo-plugin-sdk` v0.27.0.
 
 ```bash
 make test
@@ -50,9 +53,9 @@ make build
 
 `make build-all` produces static binaries for the platforms declared in `manifest.json`.
 
-## Contributing
+## Releasing
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Changes to authentication, reconciliation, idempotency, or the watch-sync contract should start as an issue.
+Releases follow the ramindex plugin catalog's `RELEASING.md`: bump `manifest.json`, push a `v<version>` tag, then update the catalog entry.
 
 ## License
 

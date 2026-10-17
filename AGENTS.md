@@ -2,6 +2,13 @@
 
 Read [README.md](README.md) and [CONTRIBUTING.md](CONTRIBUTING.md) before working here; they define this repository's ownership, build, and validation rules.
 
+## ramindex fork
+
+- Commits are `ramindex-ci <github@ramindex.org>` with no co-author trailers or AI attribution; that overrides the pull request disclosure rule below.
+- Pushes, tags and releases go through the `ramindex-ci` GitHub App, never a personal login.
+- Release by following `ramindex-continuum-plugins/RELEASING.md` in theramindex/silo-plugins. Never push to `upstream` (Silo-Server).
+- Keep the plugin ID `silo.ramindex.trakt`. The Silo host refuses `silo.watchprovider.trakt`.
+
 ## Writing
 
 Give human-facing prose a final readability pass. Lead with the outcome, use concrete plain language and active voice, and cut filler, stock framing, repetition, and promotional claims. Preserve meaning, evidence, citations, uncertainty, and established terminology. Never rewrite exact quotations, commands, logs, identifiers, API names, or contractual language. Match the audience and use restrained formatting.

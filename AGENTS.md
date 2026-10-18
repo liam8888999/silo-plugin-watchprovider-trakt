@@ -6,7 +6,7 @@ Read [README.md](README.md) and [CONTRIBUTING.md](CONTRIBUTING.md) before workin
 
 - Commits are `ramindex-ci <github@ramindex.org>` with no co-author trailers or AI attribution; that overrides the pull request disclosure rule below.
 - Pushes, tags and releases go through the `ramindex-ci` GitHub App, never a personal login.
-- Release by following `ramindex-continuum-plugins/RELEASING.md` in theramindex/silo-plugins. Never push to `upstream` (Silo-Server).
+- Commit messages are [Conventional Commits](https://www.conventionalcommits.org): every push to `main` releases automatically when it carries a `feat`, `fix`, `perf`, `revert` or breaking commit. See `RELEASING.md` in [theramindex/silo-plugins](https://github.com/theramindex/silo-plugins). Never push to `upstream` (Silo-Server).
 - Keep the plugin ID `silo.ramindex.trakt`. The Silo host refuses `silo.watchprovider.trakt`.
 
 ## Writing
